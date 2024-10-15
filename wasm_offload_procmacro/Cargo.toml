@@ -1,0 +1,13 @@
+[package]
+name = "wasm_offload_procmacro"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+# crate_type = "proc_macro"
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0.87"
+quote = "1.0.37"
+syn = { version = "2.0.79", features = ["full"] }
