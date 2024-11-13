@@ -1,0 +1,7 @@
+[package]
+name = "wasm_offload"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wasm_offload_procmacro = { version = "0.1.0", path = "../wasm_offload_procmacro" }

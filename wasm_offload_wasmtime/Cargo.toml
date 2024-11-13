@@ -1,0 +1,10 @@
+[package]
+name = "wasm_offload_wasmtime"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+thiserror = "1.0.64"
+wasm_offload = { version = "0.1.0", path = "../wasm_offload" }
+wasmtime = { version = "25.0.2", features = ["gc", "runtime"] }
+wasmtime-wasi = "25.0.2"
