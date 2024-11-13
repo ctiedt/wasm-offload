@@ -1,12 +1,11 @@
-#![feature(proc_macro_span)]
-use std::{collections::HashMap, io::Write};
+use std::{collections::HashMap, io::Write, path::PathBuf, str::FromStr};
 
 use heck::ToUpperCamelCase;
 use proc_macro::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{ExprAssign, FnArg, GenericArgument, ItemFn, PathArguments, ReturnType};
 use wit_encoder::{
-    Field, Interface, Package, PackageName, Record, StandaloneFunc, TypeDef, Use, World, WorldItem,
+    Field, Interface, Package, PackageName, StandaloneFunc, TypeDef, Use, World, WorldItem,
     WorldNamedInterface,
 };
 
@@ -183,9 +182,11 @@ fn create_wit_bindings(ctx: &mut TypeContext, input: ItemFn) -> String {
     }
 
     let func_item = WorldItem::function_export(func);
-    let mut use_itm = Use::new("types");
-    use_itm.item("point", None);
-    world.use_(use_itm);
+    for (ty, _) in &ctx.types {
+        let mut use_itm = Use::new("types");
+        use_itm.item(ty.clone(), None);
+        world.use_(use_itm);
+    }
     world.item(func_item);
 
     pkg.interface(types_intf);
@@ -201,18 +202,16 @@ pub fn offload(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut ctx = TypeContext::default();
     let attr = syn::parse_macro_input!(attr as ExprAssign);
 
-    let sf = proc_macro::Span::call_site().source_file();
-    let src_path = sf.path();
+    let cargo_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
 
     let left = attr.left.to_token_stream().to_string();
     let right = attr.right.to_token_stream().to_string();
     match left.as_str() {
         "types" => {
             let file = right.trim_matches('"');
-            let mut path = src_path
-                .parent()
-                .expect("Source file has no parent")
-                .to_path_buf();
+            let mut path =
+                PathBuf::from_str(&cargo_dir).expect("CARGO_MANIFEST_DIR must be set and valid");
+            path.push("src");
             path.push(file);
             let types_file =
                 std::fs::read_to_string(&path).expect(&format!("Could not read `{path:?}`",));
@@ -237,9 +236,9 @@ pub fn offload(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let input = syn::parse_macro_input!(item as ItemFn);
 
-    if !std::fs::exists(concat!(env!("CARGO_MANIFEST_DIR"), "/offloaded")).unwrap() {
+    if !std::fs::exists(format!("{cargo_dir}/offloaded")).unwrap() {
         std::process::Command::new("cargo")
-            .current_dir(env!("CARGO_MANIFEST_DIR"))
+            .current_dir(&cargo_dir)
             .args(["new", "--lib", "offloaded"])
             .spawn()
             .unwrap()
@@ -247,7 +246,7 @@ pub fn offload(attr: TokenStream, item: TokenStream) -> TokenStream {
             .unwrap();
         let mut manifest = std::fs::OpenOptions::new()
             .write(true)
-            .open(concat!(env!("CARGO_MANIFEST_DIR"), "/offloaded/Cargo.toml"))
+            .open(format!("{cargo_dir}/offloaded/Cargo.toml"))
             .unwrap();
         manifest
             .write_all(
@@ -268,35 +267,35 @@ crate-type = ["cdylib"]
             )
             .unwrap();
         std::process::Command::new("cargo")
-            .current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/offloaded"))
+            .current_dir(format!("{cargo_dir}/offloaded"))
             .args(["add", "wit-bindgen"])
             .spawn()
             .unwrap()
             .wait()
             .unwrap();
     }
+
     std::fs::write(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/offloaded/src/lib.rs"),
+        format!("{cargo_dir}/offloaded/src/lib.rs"),
         create_component_source(input.clone()).to_string(),
     )
     .unwrap();
-    std::fs::create_dir_all(concat!(env!("CARGO_MANIFEST_DIR"), "/offloaded/wit")).unwrap();
+    std::fs::create_dir_all(format!("{cargo_dir}/offloaded/wit")).unwrap();
     std::fs::write(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/offloaded/wit/offloaded.wit"),
+        format!("{cargo_dir}/offloaded/wit/offloaded.wit"),
         create_wit_bindings(&mut ctx, input.clone()),
     )
     .unwrap();
     std::process::Command::new("cargo")
-        .current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/offloaded"))
+        .current_dir(format!("{cargo_dir}/offloaded"))
         .args(["build", "--release", "--target", "wasm32-wasip2"])
         .spawn()
         .unwrap()
         .wait()
         .unwrap();
 
-    let wasm_output = std::fs::read(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/offloaded/target/wasm32-wasip2/release/offloaded.wasm"
+    let wasm_output = std::fs::read(format!(
+        "{cargo_dir}/offloaded/target/wasm32-wasip2/release/offloaded.wasm"
     ))
     .unwrap();
 
@@ -329,7 +328,6 @@ crate-type = ["cdylib"]
                 pub fn #fn_name(#fn_args) -> Result<wasm_offload::Val, Box<dyn std::error::Error>> {
                     let wasm = vec![#(#wasm_output),*];
                     let res = OFFLOADER.lock()?.call_function(&wasm, #fn_name_str, &[#(#fn_params.into()),*], true)?;
-                    // let res = OFFLOADER.lock()?.call_function(&wasm, #fn_name_str, &[#(wasm_offload::Val::from(#fn_params)),*], true)?;
                     Ok(res.unwrap())
                 }
             }
