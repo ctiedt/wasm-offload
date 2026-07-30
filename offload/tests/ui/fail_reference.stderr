@@ -1,0 +1,5 @@
+error: references cannot cross the offload boundary; use owned data instead
+ --> tests/ui/fail_reference.rs:4:18
+  |
+4 | fn length(value: &str) -> u32 {
+  |                  ^

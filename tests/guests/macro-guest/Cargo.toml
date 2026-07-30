@@ -1,0 +1,14 @@
+[package]
+name = "offload-macro-test-guest"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+offload = { path = "../../../offload" }
+serde = { version = "1.0.229", features = ["derive"] }
+
+[workspace]

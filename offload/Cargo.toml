@@ -1,0 +1,21 @@
+[package]
+name = "offload"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[features]
+default = []
+an-mode = ["offload-core/an-mode"]
+
+[dependencies]
+offload-core = { workspace = true }
+offload-guest = { workspace = true }
+offload-macros = { workspace = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+offload-host = { workspace = true }
+
+[dev-dependencies]
+serde = { workspace = true }
+trybuild = { workspace = true }

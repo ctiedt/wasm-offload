@@ -1,0 +1,5 @@
+error: `impl Trait` cannot appear in an offload signature; use a concrete owned type
+ --> tests/ui/fail_impl_trait.rs:4:20
+  |
+4 | fn make_value() -> impl Iterator<Item = u32> {
+  |                    ^^^^

@@ -1,0 +1,22 @@
+[package]
+name = "solo"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+path = "src/main.rs"
+
+[[bin]]
+name = "solo"
+path = "src/main.rs"
+
+[dependencies]
+offload = { path = "../../offload" }
+serde = { version = "1.0.229", features = ["derive"] }
+
+[build-dependencies]
+offload-build = { path = "../../offload-build" }
+
+[workspace]

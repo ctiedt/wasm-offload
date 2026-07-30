@@ -1,0 +1,5 @@
+error: `#[offload]` does not support generic functions or where clauses
+ --> tests/ui/fail_generic.rs:4:12
+  |
+4 | fn identity<T>(value: T) -> T {
+  |            ^

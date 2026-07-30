@@ -1,0 +1,15 @@
+[package]
+name = "offload-macros"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+offload-core = { workspace = true }
+postcard = { workspace = true }
+proc-macro2 = "1.0.107"
+quote = "1.0.47"
+syn = { version = "3.0.2", features = ["full", "visit"] }

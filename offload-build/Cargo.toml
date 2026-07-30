@@ -1,0 +1,10 @@
+[package]
+name = "offload-build"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+offload-core = { workspace = true }
+cargo_metadata = "0.19.2"

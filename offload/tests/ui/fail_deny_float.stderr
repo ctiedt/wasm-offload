@@ -1,0 +1,5 @@
+error: `f32` cannot cross an AN-compatible offload boundary
+ --> tests/ui/fail_deny_float.rs:4:20
+  |
+4 | fn distance(value: f32) -> f32 {
+  |                    ^^^

@@ -1,0 +1,10 @@
+[package]
+name = "offload-guest"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+offload-core = { workspace = true }
+postcard = { workspace = true }
+serde = { workspace = true }

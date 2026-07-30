@@ -1,0 +1,5 @@
+error: `usize` cannot cross the 64-bit host / 32-bit guest boundary; use `u32`, `u64`, `i32`, or `i64`
+ --> tests/ui/fail_usize.rs:4:28
+  |
+4 | fn increment(value: Option<usize>) -> u64 {
+  |                            ^^^^^

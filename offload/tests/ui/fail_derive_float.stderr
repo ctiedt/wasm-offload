@@ -1,0 +1,5 @@
+error: `AnCompatible` cannot be derived for a field containing `f64`; floating-point values are not supported by AN encoding
+ --> tests/ui/fail_derive_float.rs:5:12
+  |
+5 |     value: f64,
+  |            ^^^

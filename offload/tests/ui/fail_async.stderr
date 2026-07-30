@@ -1,0 +1,5 @@
+error: `#[offload]` does not support async functions at the moment
+ --> tests/ui/fail_async.rs:4:1
+  |
+4 | async fn compute(value: u32) -> u32 {
+  | ^^^^^

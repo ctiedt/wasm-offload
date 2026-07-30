@@ -1,0 +1,17 @@
+[package]
+name = "offload-host"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+offload-core = { workspace = true }
+postcard = { workspace = true }
+serde = { workspace = true }
+wasmparser = { workspace = true }
+wasmtime = { workspace = true }
+wasmtime-wasi = { workspace = true }
+
+[dev-dependencies]
+proptest = "1.11.0"

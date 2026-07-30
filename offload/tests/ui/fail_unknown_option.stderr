@@ -1,0 +1,5 @@
+error: unsupported offload option; valid options are `export = "..."`, `deny_floats`, and `try`
+ --> tests/ui/fail_unknown_option.rs:3:11
+  |
+3 | #[offload(remote)]
+  |           ^^^^^^
