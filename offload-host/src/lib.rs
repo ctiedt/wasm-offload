@@ -1,12 +1,10 @@
 mod offloader;
-mod target;
 mod wasmtime_target;
 
 use std::sync::OnceLock;
 
-pub use offload_core::OffloadError;
-pub use offloader::{InstancePolicy, Offloader, OffloaderBuilder, WasiConfig};
-pub use target::OffloadTarget;
+pub use offload_core::{InstancePolicy, OffloadError, OffloadTarget};
+pub use offloader::{Offloader, OffloaderBuilder, WasiConfig};
 pub use wasmtime_target::WasmtimeTarget;
 
 static GLOBAL: OnceLock<Offloader> = OnceLock::new();

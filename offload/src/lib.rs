@@ -7,6 +7,9 @@ pub use offload_host::{
     init,
 };
 
+#[cfg(not(target_arch = "wasm32"))]
+pub use offload_remote::RemoteTarget;
+
 #[doc(hidden)]
 pub mod __private {
     #[cfg(target_arch = "wasm32")]

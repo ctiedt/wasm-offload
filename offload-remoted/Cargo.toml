@@ -1,0 +1,13 @@
+[package]
+name = "offload-remoted"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+clap = { workspace = true }
+env_logger = { workspace = true }
+log = { workspace = true }
+offload-core = { workspace = true }
+offload-host = { workspace = true }
+offload-remote = { workspace = true }

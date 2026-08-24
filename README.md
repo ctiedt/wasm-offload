@@ -162,6 +162,22 @@ offload::init_guest!(
 
 It has to implement the trait `offload::OffloadTarget`.
 
+The provided remote target can connect through TCP or a UART device:
+```Rust
+offload::init_guest!(
+    artifact = "mylib",
+    target = offload::RemoteTarget::tcp("10.0.0.2:8080"),
+)?;
+
+offload::init_guest!(
+    artifact = "mylib",
+    target = offload::RemoteTarget::uart("/dev/ttyUSB0", 115_200),
+)?;
+```
+
+The remote computer must run `offload-remoted` with the matching TCP address or
+UART device. See [`offload-remoted`](offload-remoted/README.md) for setup.
+
 # Configuration
 
 Per default, the original signature is preserved:
@@ -197,5 +213,4 @@ The following common features cannot be used with the `#[offload]` macro:
 - Be aware of pointer-sized integers (e.g. `usize`/`isize`), as they are 32-Bit on the WASM side but (probably) 64-Bit on the host side.
 
 Arguments and return types must be owned and must implement `serde::Serialize` and `serde::de::DeserializeOwned`.
-
 

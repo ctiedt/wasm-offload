@@ -3,6 +3,7 @@
 extern crate alloc;
 
 mod error;
+mod target;
 
 use alloc::boxed::Box;
 use alloc::string::String;
@@ -10,6 +11,7 @@ use alloc::vec::Vec;
 use serde::{Deserialize, Serialize};
 
 pub use error::OffloadError;
+pub use target::{InstancePolicy, OffloadTarget};
 
 pub const ABI_VERSION: u32 = 1;
 

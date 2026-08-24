@@ -1,0 +1,12 @@
+[package]
+name = "offload-remote"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+offload-core = { workspace = true }
+postcard = { workspace = true }
+serialport = { workspace = true }
+serde = { workspace = true }

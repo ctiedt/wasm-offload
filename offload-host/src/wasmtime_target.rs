@@ -1,7 +1,8 @@
 use std::sync::Mutex;
 
 use offload_core::{
-    ABI_VERSION_EXPORT, ALLOC_EXPORT, FREE_EXPORT, MEMORY_EXPORT, OffloadError, unpack_ret,
+    ABI_VERSION_EXPORT, ALLOC_EXPORT, FREE_EXPORT, InstancePolicy, MEMORY_EXPORT, OffloadError,
+    OffloadTarget, unpack_ret,
 };
 use wasmtime::{
     Config, Engine, Instance, InstanceAllocationStrategy, InstancePre, Linker, Memory, Module,
@@ -9,8 +10,7 @@ use wasmtime::{
 };
 use wasmtime_wasi::p1::{self as preview1, WasiP1Ctx};
 
-use crate::offloader::{InstancePolicy, WasiConfig};
-use crate::target::OffloadTarget;
+use crate::offloader::WasiConfig;
 
 const WASI_INITIALIZE_EXPORT: &str = "_initialize";
 
@@ -18,6 +18,7 @@ pub struct WasmtimeTarget {
     engine: Engine,
     wasi: WasiConfig,
     prepared: Option<InstancePre<WasiP1Ctx>>,
+    policy: InstancePolicy,
     shared: Mutex<Option<SharedInstance>>,
 }
 
@@ -46,6 +47,7 @@ impl WasmtimeTarget {
             engine,
             wasi,
             prepared: None,
+            policy: InstancePolicy::default(),
             shared: Mutex::new(None),
         }
     }
@@ -101,7 +103,7 @@ impl WasmtimeTarget {
 }
 
 impl OffloadTarget for WasmtimeTarget {
-    fn prepare(&mut self, module: &[u8]) -> Result<(), OffloadError> {
+    fn prepare(&mut self, module: &[u8], policy: InstancePolicy) -> Result<(), OffloadError> {
         let module =
             Module::new(&self.engine, module).map_err(|e| OffloadError::Runtime(e.into()))?;
         let mut linker: Linker<WasiP1Ctx> = Linker::new(&self.engine);
@@ -111,16 +113,16 @@ impl OffloadTarget for WasmtimeTarget {
             .instantiate_pre(&module)
             .map_err(|e| OffloadError::Runtime(e.into()))?;
         self.prepared = Some(pre);
+        self.policy = policy;
+        *self
+            .shared
+            .get_mut()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = None;
         Ok(())
     }
 
-    fn call_raw(
-        &self,
-        export: &str,
-        args: &[u8],
-        policy: InstancePolicy,
-    ) -> Result<Vec<u8>, OffloadError> {
-        match policy {
+    fn call_raw(&self, export: &str, args: &[u8]) -> Result<Vec<u8>, OffloadError> {
+        match self.policy {
             InstancePolicy::PerCall => {
                 let mut fresh = self.instantiate()?;
                 do_call(&mut fresh, export, args)

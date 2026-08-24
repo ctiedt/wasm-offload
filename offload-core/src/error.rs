@@ -22,6 +22,8 @@ pub enum OffloadError {
     },
     #[cfg(feature = "std")]
     Runtime(anyhow::Error),
+    #[cfg(feature = "std")]
+    Transport(anyhow::Error),
 }
 
 impl fmt::Display for OffloadError {
@@ -55,6 +57,8 @@ impl fmt::Display for OffloadError {
             ),
             #[cfg(feature = "std")]
             Self::Runtime(e) => write!(f, "offload runtime error: {e}"),
+            #[cfg(feature = "std")]
+            Self::Transport(e) => write!(f, "offload transport error: {e}"),
         }
     }
 }
@@ -64,7 +68,7 @@ impl core::error::Error for OffloadError {
         match self {
             Self::Encode(e) | Self::Decode(e) => Some(e),
             #[cfg(feature = "std")]
-            Self::GuestTrap(e) | Self::Runtime(e) => Some(e.as_ref()),
+            Self::GuestTrap(e) | Self::Runtime(e) | Self::Transport(e) => Some(e.as_ref()),
             _ => None,
         }
     }

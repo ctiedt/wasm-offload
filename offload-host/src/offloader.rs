@@ -1,19 +1,13 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use offload_core::{ABI_VERSION, MANIFEST_SECTION, ManifestRecord, OffloadError};
+use offload_core::{
+    ABI_VERSION, InstancePolicy, MANIFEST_SECTION, ManifestRecord, OffloadError, OffloadTarget,
+};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
-use crate::target::OffloadTarget;
 use crate::wasmtime_target::WasmtimeTarget;
-
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum InstancePolicy {
-    #[default]
-    PerCall,
-    Shared,
-}
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct WasiConfig {
@@ -49,7 +43,6 @@ impl WasiConfig {
 
 pub struct Offloader {
     target: Box<dyn OffloadTarget>,
-    policy: InstancePolicy,
     manifest: HashMap<String, u64>,
     checked: Mutex<HashMap<String, u64>>,
 }
@@ -71,7 +64,7 @@ impl Offloader {
         R: DeserializeOwned,
     {
         let encoded = postcard::to_allocvec(args).map_err(OffloadError::Encode)?;
-        let ret = self.target.call_raw(export, &encoded, self.policy)?;
+        let ret = self.target.call_raw(export, &encoded)?;
         postcard::from_bytes(&ret).map_err(OffloadError::Decode)
     }
 
@@ -140,7 +133,7 @@ impl OffloaderBuilder<'_> {
             None if self.pooling_allocator => Box::new(WasmtimeTarget::with_pooling(self.wasi)?),
             None => Box::new(WasmtimeTarget::new(self.wasi)),
         };
-        target.prepare(self.module_bytes)?;
+        target.prepare(self.module_bytes, self.policy)?;
         let guest = target.abi_version()?;
         if guest != ABI_VERSION {
             return Err(OffloadError::AbiVersion {
@@ -151,7 +144,6 @@ impl OffloaderBuilder<'_> {
         let manifest = parse_manifest(self.module_bytes)?;
         Ok(Offloader {
             target,
-            policy: self.policy,
             manifest,
             checked: Mutex::new(HashMap::new()),
         })

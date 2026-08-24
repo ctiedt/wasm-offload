@@ -6,16 +6,11 @@ struct FakeTarget {
 }
 
 impl OffloadTarget for FakeTarget {
-    fn prepare(&mut self, _module: &[u8]) -> Result<(), OffloadError> {
+    fn prepare(&mut self, _module: &[u8], _policy: InstancePolicy) -> Result<(), OffloadError> {
         Ok(())
     }
 
-    fn call_raw(
-        &self,
-        _export: &str,
-        _args: &[u8],
-        _policy: InstancePolicy,
-    ) -> Result<Vec<u8>, OffloadError> {
+    fn call_raw(&self, _export: &str, _args: &[u8]) -> Result<Vec<u8>, OffloadError> {
         unreachable!()
     }
 
