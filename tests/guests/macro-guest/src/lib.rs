@@ -50,3 +50,32 @@ pub fn nested(value: i32) -> i32 {
 pub fn destructured((left, right): (i32, i32)) -> i32 {
     left - right
 }
+
+#[offload]
+pub fn inspect_references(point: &Point, label: &str, values: &[i32]) -> i32 {
+    point.x + point.y + label.len() as i32 + values.iter().sum::<i32>()
+}
+
+#[offload]
+pub fn mutate_references(point: &mut Point, label: &mut str, values: &mut [i32]) -> i32 {
+    point.x += 10;
+    point.y -= 5;
+    label.make_ascii_uppercase();
+    for value in values.iter_mut() {
+        *value *= 2;
+    }
+    point.x + point.y + label.len() as i32 + values.iter().sum::<i32>()
+}
+
+#[offload(try)]
+pub fn try_mutate_reference(point: &mut Point) -> i32 {
+    point.x += 1;
+    point.y += 2;
+    point.x + point.y
+}
+
+#[offload(try)]
+pub fn mutate_then_panic(point: &mut Point) {
+    point.x = i32::MAX;
+    panic!("mutation failed")
+}

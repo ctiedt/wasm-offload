@@ -1,0 +1,5 @@
+error: `'static` references cannot cross the offload boundary without permanently storing the guest copy; use an ordinary borrowed argument instead
+ --> tests/ui/fail_static_reference.rs:4:19
+  |
+4 | fn length(value: &'static str) -> u32 {
+  |                   ^^^^^^^

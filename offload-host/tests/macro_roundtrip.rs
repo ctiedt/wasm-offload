@@ -50,7 +50,7 @@ fn manifest() -> HashMap<String, u64> {
 fn generated_exports_roundtrip_and_nested_calls_stay_in_guest() {
     let offloader = Offloader::builder(guest_bytes()).build().unwrap();
     let hashes = manifest();
-    assert_eq!(hashes.len(), 7);
+    assert_eq!(hashes.len(), 11);
 
     let add: i64 = offloader
         .call_checked("__offload_add", hashes["__offload_add"], &(40i64, 2i64))

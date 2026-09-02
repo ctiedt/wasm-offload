@@ -1,5 +1,5 @@
-error: references cannot cross the offload boundary; use owned data instead
- --> tests/ui/fail_reference.rs:4:18
+error: references cannot be returned across the offload boundary because the host has no owner for the copied referent; return owned data instead
+ --> tests/ui/fail_reference.rs:4:32
   |
-4 | fn length(value: &str) -> u32 {
-  |                  ^
+4 | fn identity(value: &String) -> &String {
+  |                                ^

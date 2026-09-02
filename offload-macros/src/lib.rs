@@ -16,6 +16,31 @@ struct OffloadOptions {
     try_mode: bool,
 }
 
+#[derive(Clone, Copy)]
+enum ArgumentKind {
+    Owned,
+    Shared,
+    Mutable,
+    SharedStr,
+    MutableStr,
+    SharedSlice,
+    MutableSlice,
+}
+
+struct BoundaryArgument {
+    wire_type: Type,
+    kind: ArgumentKind,
+}
+
+impl BoundaryArgument {
+    fn is_mutable(&self) -> bool {
+        matches!(
+            self.kind,
+            ArgumentKind::Mutable | ArgumentKind::MutableStr | ArgumentKind::MutableSlice
+        )
+    }
+}
+
 #[proc_macro_attribute]
 pub fn offload(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut options = OffloadOptions::default();
@@ -62,7 +87,7 @@ fn expand_offload(
     function: ItemFn,
     options: OffloadOptions,
 ) -> syn::Result<proc_macro2::TokenStream> {
-    validate_signature(&function, &options)?;
+    let boundary_arguments = validate_signature(&function, &options)?;
 
     let attrs = &function.attrs;
     let visibility = &function.vis;
@@ -125,17 +150,61 @@ fn expand_offload(
     let manifest_bytes = manifest.iter();
     let manifest_section = LitStr::new(offload_core::MANIFEST_SECTION, Span::call_site());
 
-    let tuple_type = tuple_tokens(&argument_types);
-    let argument_tuple = tuple_tokens(&argument_names);
+    let wire_argument_types: Vec<_> = boundary_arguments
+        .iter()
+        .map(|argument| &argument.wire_type)
+        .collect();
+    let wire_argument_tuple_type = tuple_tokens(&wire_argument_types);
+    let wire_argument_patterns: Vec<_> = boundary_arguments
+        .iter()
+        .zip(&argument_names)
+        .map(|(argument, name)| {
+            if argument.is_mutable() {
+                quote!(mut #name)
+            } else {
+                quote!(#name)
+            }
+        })
+        .collect();
+    let wire_argument_tuple_pattern = tuple_tokens(&wire_argument_patterns);
+
+    let borrowed_guest_arguments: Vec<_> = boundary_arguments
+        .iter()
+        .zip(&argument_names)
+        .map(|(argument, name)| match argument.kind {
+            ArgumentKind::Owned => quote!(#name),
+            ArgumentKind::Shared => quote!(&#name),
+            ArgumentKind::Mutable => quote!(&mut #name),
+            ArgumentKind::SharedStr => quote!(#name.as_str()),
+            ArgumentKind::MutableStr => quote!(#name.as_mut_str()),
+            ArgumentKind::SharedSlice => quote!(#name.as_slice()),
+            ArgumentKind::MutableSlice => quote!(#name.as_mut_slice()),
+        })
+        .collect();
     let invoke = if matches!(&function.sig.safety, syn::Safety::Unsafe(_)) {
-        quote!(unsafe { #original_name(#(#argument_names),*) })
+        quote!(unsafe { #original_name(#(#borrowed_guest_arguments),*) })
     } else {
-        quote!(#original_name(#(#argument_names),*))
+        quote!(#original_name(#(#borrowed_guest_arguments),*))
     };
     let guest_invoke = if options.try_mode {
         quote!(#invoke.expect("offload: `try` guest function unexpectedly returned an infrastructure error. If you see this, something is seriously wrong"))
     } else {
         invoke
+    };
+    let mutable_arguments: Vec<_> = boundary_arguments
+        .iter()
+        .zip(&argument_names)
+        .enumerate()
+        .filter(|(_, (argument, _))| argument.is_mutable())
+        .collect();
+    let guest_response = if mutable_arguments.is_empty() {
+        guest_invoke
+    } else {
+        let mutable_names = mutable_arguments.iter().map(|(_, (_, name))| name);
+        quote!({
+            let __offload_return = #guest_invoke;
+            (__offload_return, #(#mutable_names),*)
+        })
     };
     let export_attribute = if options.export.is_some() {
         quote!(#[unsafe(export_name = #export_literal)])
@@ -165,24 +234,91 @@ fn expand_offload(
         host_signature.output = result_return_type(&return_type);
     }
 
+    let host_wire_argument_values: Vec<_> = boundary_arguments
+        .iter()
+        .zip(&argument_names)
+        .map(|(argument, name)| match argument.kind {
+            ArgumentKind::Mutable | ArgumentKind::MutableStr | ArgumentKind::MutableSlice => {
+                quote!(&*#name)
+            }
+            _ => quote!(#name),
+        })
+        .collect();
+    let host_wire_argument_tuple = tuple_tokens(&host_wire_argument_values);
+    let rpc_call = if mutable_arguments.is_empty() {
+        quote!(::offload::__private::host::call_checked::<_, #return_type>(
+            #export_literal,
+            SIG,
+            &#host_wire_argument_tuple,
+        ))
+    } else {
+        let response_types = core::iter::once(&return_type).chain(
+            mutable_arguments
+                .iter()
+                .map(|(_, (argument, _))| &argument.wire_type),
+        );
+        let response_type = tuple_tokens(&response_types.collect::<Vec<_>>());
+        quote!(::offload::__private::host::call_checked::<_, #response_type>(
+            #export_literal,
+            SIG,
+            &#host_wire_argument_tuple,
+        ))
+    };
+    let rpc_result_with_copy_back = if mutable_arguments.is_empty() {
+        rpc_call
+    } else {
+        let mutable_result_names: Vec<_> = mutable_arguments
+            .iter()
+            .map(|(index, _)| format_ident!("__offload_mutated_{index}"))
+            .collect();
+        let response_pattern = tuple_tokens(
+            &core::iter::once(quote!(__offload_return))
+                .chain(mutable_result_names.iter().map(|name| quote!(#name)))
+                .collect::<Vec<_>>(),
+        );
+        let validations = mutable_arguments
+            .iter()
+            .zip(&mutable_result_names)
+            .filter_map(|((index, (argument, name)), result)| match argument.kind {
+                ArgumentKind::MutableSlice | ArgumentKind::MutableStr => Some(quote! {
+                    ::offload::__private::host::ensure_copy_back_len(
+                        #index,
+                        #name.len(),
+                        #result.len(),
+                    )?;
+                }),
+                _ => None,
+            });
+        let copy_back = mutable_arguments.iter().zip(&mutable_result_names).map(
+            |((_index, (argument, name)), result)| match argument.kind {
+                ArgumentKind::Mutable => quote!(*#name = #result;),
+                ArgumentKind::MutableSlice => quote!(
+                    ::offload::__private::host::copy_back_slice(#name, #result);
+                ),
+                ArgumentKind::MutableStr => quote!(
+                    ::offload::__private::host::copy_back_str(#name, #result);
+                ),
+                _ => unreachable!("mutable argument list contains an immutable argument"),
+            },
+        );
+        quote!((|| -> ::core::result::Result<#return_type, ::offload::OffloadError> {
+            let #response_pattern = #rpc_call?;
+            #(#validations)*
+            #(#copy_back)*
+            ::core::result::Result::Ok(__offload_return)
+        })())
+    };
+
     let host_body = if options.try_mode {
         quote!({
             const SIG: u64 = #signature_hash;
-            ::offload::__private::host::call_checked::<_, #return_type>(
-                #export_literal,
-                SIG,
-                &#argument_tuple,
-            )
+            #rpc_result_with_copy_back
         })
     } else {
         let display_name = original_name.to_string();
         quote!({
             const SIG: u64 = #signature_hash;
-            match ::offload::__private::host::call_checked::<_, #return_type>(
-                #export_literal,
-                SIG,
-                &#argument_tuple,
-            ) {
+            match #rpc_result_with_copy_back {
                 ::core::result::Result::Ok(value) => value,
                 ::core::result::Result::Err(error) => {
                     panic!("offload call `{}` failed: {}", #display_name, error)
@@ -191,8 +327,14 @@ fn expand_offload(
         })
     };
 
-    let boundary_checks =
-        compatibility_assertions(&argument_types, &return_type, options.deny_floats);
+    let boundary_checks = compatibility_assertions(
+        &boundary_arguments
+            .iter()
+            .map(|argument| argument.wire_type.clone())
+            .collect::<Vec<_>>(),
+        &return_type,
+        options.deny_floats,
+    );
 
     Ok(quote! {
         #boundary_checks
@@ -208,7 +350,7 @@ fn expand_offload(
                 ::offload::__private::guest::entry(
                     ptr,
                     len,
-                    |#argument_tuple: #tuple_type| #guest_invoke,
+                    |#wire_argument_tuple_pattern: #wire_argument_tuple_type| #guest_response,
                 )
             }
 
@@ -223,7 +365,10 @@ fn expand_offload(
     })
 }
 
-fn validate_signature(function: &ItemFn, options: &OffloadOptions) -> syn::Result<()> {
+fn validate_signature(
+    function: &ItemFn,
+    options: &OffloadOptions,
+) -> syn::Result<Vec<BoundaryArgument>> {
     let signature = &function.sig;
     if let Some(constness) = signature.constness {
         return Err(syn::Error::new(
@@ -269,6 +414,7 @@ fn validate_signature(function: &ItemFn, options: &OffloadOptions) -> syn::Resul
         ));
     }
 
+    let mut boundary_arguments = Vec::with_capacity(signature.inputs.len());
     for argument in &signature.inputs {
         match argument {
             FnArg::Receiver(receiver) => {
@@ -277,13 +423,105 @@ fn validate_signature(function: &ItemFn, options: &OffloadOptions) -> syn::Resul
                     "`#[offload]` only supports standalone functions; methods with `self` are not supported",
                 ));
             }
-            FnArg::Typed(argument) => validate_boundary_type(&argument.ty, options)?,
+            FnArg::Typed(argument) => {
+                boundary_arguments.push(classify_argument(&argument.ty, options)?);
+            }
         }
     }
     if let ReturnType::Type(_, ty) = &signature.output {
-        validate_boundary_type(ty, options)?;
+        validate_return_type(ty, options)?;
     }
-    Ok(())
+    Ok(boundary_arguments)
+}
+
+fn classify_argument(ty: &Type, options: &OffloadOptions) -> syn::Result<BoundaryArgument> {
+    let Type::Reference(reference) = peel_type(ty) else {
+        validate_boundary_type(ty, options)?;
+        return Ok(BoundaryArgument {
+            wire_type: ty.clone(),
+            kind: ArgumentKind::Owned,
+        });
+    };
+
+    if let Some(lifetime) = &reference.lifetime
+        && lifetime.ident == "static"
+    {
+        return Err(syn::Error::new(
+            lifetime.span(),
+            "`'static` references cannot cross the offload boundary without permanently storing the guest copy; use an ordinary borrowed argument instead",
+        ));
+    }
+
+    let mutable = reference.mutability.is_some();
+    let referenced = peel_type(&reference.elem);
+    let (wire_type, kind) = match referenced {
+        Type::Slice(slice) => {
+            let element = &slice.elem;
+            let wire_type = parse_quote_spanned!(referenced.span()=> ::std::vec::Vec<#element>);
+            let kind = if mutable {
+                ArgumentKind::MutableSlice
+            } else {
+                ArgumentKind::SharedSlice
+            };
+            (wire_type, kind)
+        }
+        Type::Path(path) if is_primitive_str(path) => {
+            let wire_type = parse_quote_spanned!(referenced.span()=> ::std::string::String);
+            let kind = if mutable {
+                ArgumentKind::MutableStr
+            } else {
+                ArgumentKind::SharedStr
+            };
+            (wire_type, kind)
+        }
+        Type::TraitObject(object) => {
+            return Err(syn::Error::new(
+                object.dyn_token.span(),
+                "trait-object references cannot cross the offload boundary; use a concrete serializable type",
+            ));
+        }
+        _ => {
+            let kind = if mutable {
+                ArgumentKind::Mutable
+            } else {
+                ArgumentKind::Shared
+            };
+            (referenced.clone(), kind)
+        }
+    };
+    validate_boundary_type(&wire_type, options)?;
+    Ok(BoundaryArgument { wire_type, kind })
+}
+
+fn peel_type(mut ty: &Type) -> &Type {
+    loop {
+        ty = match ty {
+            Type::Group(group) => &group.elem,
+            Type::Paren(paren) => &paren.elem,
+            _ => return ty,
+        };
+    }
+}
+
+fn is_primitive_str(path: &syn::TypePath) -> bool {
+    path.qself.is_none()
+        && path
+            .path
+            .segments
+            .last()
+            .is_some_and(|segment| segment.ident == "str")
+}
+
+fn validate_return_type(ty: &Type, options: &OffloadOptions) -> syn::Result<()> {
+    let mut inspection = TypeInspection::default();
+    inspection.visit_type(ty);
+    if let Some(span) = inspection.reference {
+        return Err(syn::Error::new(
+            span,
+            "references cannot be returned across the offload boundary because the host has no owner for the copied referent; return owned data instead",
+        ));
+    }
+    validate_boundary_type(ty, options)
 }
 
 #[derive(Default)]
@@ -334,7 +572,7 @@ fn validate_boundary_type(ty: &Type, options: &OffloadOptions) -> syn::Result<()
     if let Some(span) = inspection.reference {
         return Err(syn::Error::new(
             span,
-            "references cannot cross the offload boundary; use owned data instead",
+            "only top-level argument references can cross the offload boundary; nested references are not supported",
         ));
     }
     if let Some(span) = inspection.slice {

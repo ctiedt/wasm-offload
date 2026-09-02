@@ -5,11 +5,9 @@ runtime. Just annotate any functions you want to offload with `#[offload]` and
 define your `OffloadTarget` and your code will seamlessly run in WebAssembly.
 An implementation for [wasmtime](https://github.com/bytecodealliance/wasmtime) is already provided.
 
-# Design
+## Design
 The crates works by compiling your code twice, once for your regular target and once for WASM, where each pass expands the offloaded functions differently using macros and implementing a small specialized rpc framework to seamlessly call them (transparent to the developer). This requires either nightly (bindeps) and the offloaded functions to be in a library or using the provided build script.
 The default WASM target is `wasm32-wasip1`.
-
-# Examples
 
 ## Recommended setup
 The recommended setup is to use a workspace and put the offloaded functions into a library (requires nightly):
@@ -118,7 +116,7 @@ GuestBuilder::new("mylib")
 ```
 **Note:** This belongs in `build.rs`.
 
-# Initialization
+## Initialization
 The `init_guest!` macro is provided for easy and ergonomic Initialization:
 ```Rust
 offload::init_guest!(
@@ -131,11 +129,11 @@ offload::init_guest!(
 **Note:** When using the nightly bindeps approach, the artifact option must be manually set. It can be omitted when using the build script.
 
 It also provides several configuration options:
-## Instance policies
+### Instance policies
 - `InstancePolicy::PerCall` (default) creates a new instance for each call, so global states resets between calls. This prevents faults from propagating between calls.
 - `InstancePolicy::Shared` preserves a single guest instance for all calls, making it possible to retain global state in the guest between calls. It uses a mutex and can therefore not be used concurrently.
 
-## WASI configuration
+### WASI configuration
 It specifies the configuration used for WASI:
 ```Rust
 let wasi = offload::WasiConfig::new()
@@ -148,10 +146,10 @@ offload::WasiConfig::new()
     .inherit_output()
 ```
 
-## Wasmtime settings
+### Wasmtime settings
 Use options like Wasmtime's pooling allocator (see example above)
 
-## Target
+### Target
 Specify a custom target to be used:
 ```Rust
 offload::init_guest!(
@@ -178,7 +176,7 @@ offload::init_guest!(
 The remote computer must run `offload-remoted` with the matching TCP address or
 UART device. See [`offload-remoted`](offload-remoted/README.md) for setup.
 
-# Configuration
+## Settings
 
 Per default, the original signature is preserved:
 ```Rust
@@ -197,11 +195,23 @@ It is also possible to give the exported function another name:
 #[offload(export = "custom-name")]
 ```
 
+## References
 
-# Limitations
+- Immutable references, e.g. `&T`, are copied and then serialized. Changes through internal mutability, such as `Cell`, `RefCell` or `Mutex`, are NOT sent back and do therefore NOT mutate the original object.
+- Mutable references are copied, serialized and then sent back in their changed version.
+- `&str` and `&mut str` are converted to `String` for serialization. 
+- Slices, e.g. `&[T]` and `&mut [T]` are converted to `Vec<T>` for serialization.
+
+Mutable arguments are sent back in their updated state after the call completes to update the state in the host accordingly. If the call itself fails, those arguments are NOT sent back and the state of them in the host remains the same as before the call. 
+
+Each reference argument is serialized independently, so two references to the same object become two separate guest objects.
+
+Returning references is not supported. Although technically possible, the host would have no owner for the referenced value, making lifetimes awkward. You can return owned types like `String` or `Vec<T>` instead.
+
+## Limitations
 The following common features cannot be used with the `#[offload]` macro:
-- References (use owned data instead, e.g. `String` instead of `&str`)
-- Slices (use `Vec<T>` instead)
+- References in return types or nested inside boundary types
+- Explicit `'static` argument references
 - `impl Trait` (use a concrete owned type)
 - `const` functions
 - `async` functions
@@ -212,5 +222,5 @@ The following common features cannot be used with the `#[offload]` macro:
 - Methods
 - Be aware of pointer-sized integers (e.g. `usize`/`isize`), as they are 32-Bit on the WASM side but (probably) 64-Bit on the host side.
 
-Arguments and return types must be owned and must implement `serde::Serialize` and `serde::de::DeserializeOwned`.
-
+Owned boundary values and reference targets must implement `serde::Serialize` and
+`serde::de::DeserializeOwned`.
