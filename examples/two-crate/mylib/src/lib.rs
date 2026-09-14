@@ -8,7 +8,7 @@ pub struct Point {
 }
 
 #[offload]
-pub fn dist(a: &Point, b: &Point) -> f32 {
+pub fn dist(a: Point, b: Point) -> f32 {
     let dx = b.x - a.x;
     let dy = b.y - a.y;
     (dx * dx + dy * dy).sqrt()

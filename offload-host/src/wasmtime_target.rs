@@ -42,7 +42,7 @@ impl WasmtimeTarget {
         Ok(Self::with_engine(engine, wasi))
     }
 
-    fn with_engine(engine: Engine, wasi: WasiConfig) -> Self {
+    pub fn with_engine(engine: Engine, wasi: WasiConfig) -> Self {
         Self {
             engine,
             wasi,
