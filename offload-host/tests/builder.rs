@@ -91,3 +91,32 @@ fn push_uleb(mut value: u32, output: &mut Vec<u8>) {
         }
     }
 }
+
+#[test]
+fn fallback_only_applies_to_transport_errors() {
+    struct RejectingTarget;
+
+    impl OffloadTarget for RejectingTarget {
+        fn prepare(&mut self, _module: &[u8], _policy: InstancePolicy) -> Result<(), OffloadError> {
+            Err(OffloadError::Runtime(anyhow::anyhow!(
+                "remote rejected module"
+            )))
+        }
+
+        fn call_raw(&self, _export: &str, _args: &[u8]) -> Result<Vec<u8>, OffloadError> {
+            unreachable!()
+        }
+
+        fn abi_version(&self) -> Result<u32, OffloadError> {
+            unreachable!()
+        }
+    }
+
+    let error = Offloader::builder(b"\0asm\x01\0\0\0")
+        .target(RejectingTarget)
+        .fallback_to_local(true)
+        .build()
+        .err()
+        .expect("runtime error");
+    assert!(matches!(error, OffloadError::Runtime(_)));
+}

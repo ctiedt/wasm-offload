@@ -176,6 +176,24 @@ offload::init_guest!(
 The remote computer must run `offload-remoted` with the matching TCP address or
 UART device. See [`offload-remoted`](offload-remoted/README.md) for setup.
 
+If the remote device may be unavailable, enable `fallback_to_local` to run the guest
+locally with wasmtime instead (using the configured WASI and pooling allocator settings):
+```Rust
+offload::init_guest!(
+    artifact = "mylib",
+    target = offload::RemoteTarget::tcp("10.0.0.2:8080"),
+    fallback_to_local = true,
+)?;
+
+if offload::global()?.is_local_fallback() {
+    eprintln!("remote target unreachable, running locally");
+}
+```
+The fallback only happens during initialization and only for transport errors (e.g. the
+device or address cannot be reached or the handshake times out). Errors reported by the
+remote itself, such as a rejected module, are still returned. If the connection is lost
+after initialization, calls return `OffloadError::Transport` and do not fall back.
+
 ## Settings
 
 Per default, the original signature is preserved:

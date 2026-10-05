@@ -230,3 +230,47 @@ fn shared_offloader() -> &'static Offloader {
     static OFF: OnceLock<Offloader> = OnceLock::new();
     OFF.get_or_init(|| offloader(InstancePolicy::PerCall))
 }
+
+struct UnreachableTarget;
+
+impl offload_host::OffloadTarget for UnreachableTarget {
+    fn prepare(&mut self, _module: &[u8], _policy: InstancePolicy) -> Result<(), OffloadError> {
+        Err(OffloadError::Transport(anyhow::anyhow!("no device")))
+    }
+
+    fn call_raw(&self, _export: &str, _args: &[u8]) -> Result<Vec<u8>, OffloadError> {
+        unreachable!()
+    }
+
+    fn abi_version(&self) -> Result<u32, OffloadError> {
+        unreachable!()
+    }
+}
+
+#[test]
+fn unreachable_target_falls_back_to_local() {
+    let off = Offloader::builder(guest_bytes())
+        .target(UnreachableTarget)
+        .fallback_to_local(true)
+        .build()
+        .expect("offloader build");
+    assert!(off.is_local_fallback());
+    let v: Nested = vec![Some(("fallback".into(), 7))];
+    let out: Nested = off.call("__offload_echo", &(v.clone(),)).unwrap();
+    assert_eq!(out, v);
+}
+
+#[test]
+fn unreachable_target_fails_without_fallback() {
+    let error = Offloader::builder(guest_bytes())
+        .target(UnreachableTarget)
+        .build()
+        .err()
+        .expect("transport error");
+    assert!(matches!(error, OffloadError::Transport(_)));
+}
+
+#[test]
+fn local_offloader_is_not_a_fallback() {
+    assert!(!offloader(InstancePolicy::PerCall).is_local_fallback());
+}

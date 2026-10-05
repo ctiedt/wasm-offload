@@ -296,6 +296,7 @@ dependencies = [
 [[package]]
 name = "cranelift-assembler-x64"
 version = "0.132.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "cranelift-assembler-x64-meta",
 ]
@@ -303,6 +304,7 @@ dependencies = [
 [[package]]
 name = "cranelift-assembler-x64-meta"
 version = "0.132.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "cranelift-srcgen",
 ]
@@ -310,6 +312,7 @@ dependencies = [
 [[package]]
 name = "cranelift-bforest"
 version = "0.132.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "cranelift-entity",
  "wasmtime-internal-core",
@@ -318,6 +321,7 @@ dependencies = [
 [[package]]
 name = "cranelift-bitset"
 version = "0.132.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "serde",
  "serde_derive",
@@ -327,6 +331,7 @@ dependencies = [
 [[package]]
 name = "cranelift-codegen"
 version = "0.132.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "bumpalo",
  "cranelift-assembler-x64",
@@ -353,6 +358,7 @@ dependencies = [
 [[package]]
 name = "cranelift-codegen-meta"
 version = "0.132.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "cranelift-assembler-x64-meta",
  "cranelift-codegen-shared",
@@ -364,10 +370,12 @@ dependencies = [
 [[package]]
 name = "cranelift-codegen-shared"
 version = "0.132.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 
 [[package]]
 name = "cranelift-control"
 version = "0.132.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "arbitrary",
 ]
@@ -375,6 +383,7 @@ dependencies = [
 [[package]]
 name = "cranelift-entity"
 version = "0.132.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "cranelift-bitset",
  "serde",
@@ -385,6 +394,7 @@ dependencies = [
 [[package]]
 name = "cranelift-frontend"
 version = "0.132.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "cranelift-codegen",
  "log",
@@ -395,10 +405,12 @@ dependencies = [
 [[package]]
 name = "cranelift-isle"
 version = "0.132.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 
 [[package]]
 name = "cranelift-native"
 version = "0.132.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "cranelift-codegen",
  "libc",
@@ -408,6 +420,7 @@ dependencies = [
 [[package]]
 name = "cranelift-srcgen"
 version = "0.132.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 
 [[package]]
 name = "crc32fast"
@@ -1270,6 +1283,7 @@ dependencies = [
 [[package]]
 name = "pulley-interpreter"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "cranelift-bitset",
  "log",
@@ -1280,6 +1294,7 @@ dependencies = [
 [[package]]
 name = "pulley-macros"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1966,6 +1981,7 @@ dependencies = [
 [[package]]
 name = "wasmtime"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "addr2line",
  "async-trait",
@@ -2017,6 +2033,7 @@ dependencies = [
 [[package]]
 name = "wasmtime-environ"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "anyhow",
  "cpp_demangle",
@@ -2046,6 +2063,7 @@ dependencies = [
 [[package]]
 name = "wasmtime-internal-cache"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "base64",
  "directories-next",
@@ -2064,6 +2082,7 @@ dependencies = [
 [[package]]
 name = "wasmtime-internal-component-macro"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "anyhow",
  "proc-macro2",
@@ -2077,10 +2096,12 @@ dependencies = [
 [[package]]
 name = "wasmtime-internal-component-util"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 
 [[package]]
 name = "wasmtime-internal-core"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "anyhow",
  "hashbrown 0.17.1",
@@ -2091,6 +2112,7 @@ dependencies = [
 [[package]]
 name = "wasmtime-internal-cranelift"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "cfg-if",
  "cranelift-codegen",
@@ -2116,6 +2138,7 @@ dependencies = [
 [[package]]
 name = "wasmtime-internal-fiber"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "cc",
  "cfg-if",
@@ -2129,6 +2152,7 @@ dependencies = [
 [[package]]
 name = "wasmtime-internal-jit-debug"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "cc",
  "object",
@@ -2139,6 +2163,7 @@ dependencies = [
 [[package]]
 name = "wasmtime-internal-jit-icache-coherence"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "cfg-if",
  "libc",
@@ -2149,6 +2174,7 @@ dependencies = [
 [[package]]
 name = "wasmtime-internal-unwinder"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "cfg-if",
  "cranelift-codegen",
@@ -2160,6 +2186,7 @@ dependencies = [
 [[package]]
 name = "wasmtime-internal-versioned-export-macros"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2169,6 +2196,7 @@ dependencies = [
 [[package]]
 name = "wasmtime-internal-winch"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "cranelift-codegen",
  "gimli",
@@ -2184,6 +2212,7 @@ dependencies = [
 [[package]]
 name = "wasmtime-internal-wit-bindgen"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "anyhow",
  "bitflags 2.13.1",
@@ -2195,6 +2224,7 @@ dependencies = [
 [[package]]
 name = "wasmtime-wasi"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "async-trait",
  "bitflags 2.13.1",
@@ -2223,6 +2253,7 @@ dependencies = [
 [[package]]
 name = "wasmtime-wasi-io"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2265,6 +2296,7 @@ dependencies = [
 [[package]]
 name = "wiggle"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "bitflags 2.13.1",
  "thiserror 2.0.19",
@@ -2277,6 +2309,7 @@ dependencies = [
 [[package]]
 name = "wiggle-generate"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "heck",
  "proc-macro2",
@@ -2289,6 +2322,7 @@ dependencies = [
 [[package]]
 name = "wiggle-macro"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2330,6 +2364,7 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 [[package]]
 name = "winch-codegen"
 version = "45.0.0"
+source = "git+ssh://git@github.com/danielgusic/wasmtime-an.git#c98419f1a33cd8da37d895f63d6b4a62fad6481d"
 dependencies = [
  "cranelift-assembler-x64",
  "cranelift-codegen",
